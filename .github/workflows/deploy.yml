@@ -1,0 +1,86 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install root dependencies
+      run: npm install
+    
+    - name: Install server dependencies
+      run: cd server && npm install
+    
+    - name: Install client dependencies
+      run: cd client && npm install
+    
+    - name: Run server tests (if any)
+      run: cd server && npm test --if-present
+    
+    - name: Run client tests (if any)
+      run: cd client && npm test --if-present
+    
+    - name: Build client
+      run: cd client && npm run build
+
+  deploy-backend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to Render
+      # This would be configured with your specific deployment service
+      run: echo "Deploy backend to Render/Heroku/Railway"
+      # Example for Railway:
+      # - uses: railway-app/railway-action@v1
+      #   with:
+      #     service: 'rainer-route-api'
+      #     token: ${{ secrets.RAILWAY_TOKEN }}
+
+  deploy-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install and build
+      run: |
+        cd client
+        npm install
+        npm run build
+    
+    - name: Deploy to Vercel
+      # This would be configured with Vercel CLI or action
+      run: echo "Deploy frontend to Vercel/Netlify"
+      # Example for Vercel:
+      # - uses: amondnet/vercel-action@v20
+      #   with:
+      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
+      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+      #     working-directory: ./client
