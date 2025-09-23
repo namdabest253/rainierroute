@@ -41,6 +41,8 @@ const geocodeLocation = async (locationString) => {
  */
 const getDirections = async (origin, destination, travelMode) => {
   try {
+    console.log(`Getting ${travelMode} directions from ${origin.lat},${origin.lng} to ${destination.lat},${destination.lng}`);
+    
     const response = await axios.get(DIRECTIONS_API_URL, {
       params: {
         origin: `${origin.lat},${origin.lng}`,
@@ -51,8 +53,14 @@ const getDirections = async (origin, destination, travelMode) => {
       }
     });
 
+    console.log(`Directions API response status: ${response.data.status}`);
+    
+    if (response.data.status === 'REQUEST_DENIED') {
+      throw new Error(`Google Maps API request denied for ${travelMode}. Check your API key and enabled APIs.`);
+    }
+    
     if (response.data.status !== 'OK' || !response.data.routes.length) {
-      throw new Error(`No ${travelMode} route found`);
+      throw new Error(`No ${travelMode} route found (Status: ${response.data.status})`);
     }
 
     const route = response.data.routes[0];
