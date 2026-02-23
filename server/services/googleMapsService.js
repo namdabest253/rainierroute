@@ -1,5 +1,8 @@
 const axios = require('axios');
 
+// Ensure environment variables are loaded
+require('dotenv').config();
+
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 const PLACES_API_URL = 'https://maps.googleapis.com/maps/api/place/findplacefromtext/json';
 const DIRECTIONS_API_URL = 'https://maps.googleapis.com/maps/api/directions/json';
@@ -9,6 +12,12 @@ const DIRECTIONS_API_URL = 'https://maps.googleapis.com/maps/api/directions/json
  */
 const geocodeLocation = async (locationString) => {
   try {
+    console.log(`Geocoding: ${locationString}`);
+
+    if (!GOOGLE_MAPS_API_KEY) {
+      throw new Error('Google Maps API key not configured');
+    }
+
     const response = await axios.get(PLACES_API_URL, {
       params: {
         input: locationString,
@@ -19,8 +28,14 @@ const geocodeLocation = async (locationString) => {
       }
     });
 
+    console.log(`Geocoding response status: ${response.data.status}`);
+
+    if (response.data.status === 'REQUEST_DENIED') {
+      throw new Error(`Google Maps API request denied. Check your API key and enabled APIs.`);
+    }
+
     if (response.data.status !== 'OK' || !response.data.candidates.length) {
-      throw new Error(`Could not geocode location: ${locationString}`);
+      throw new Error(`Could not geocode location: ${locationString} (Status: ${response.data.status})`);
     }
 
     const place = response.data.candidates[0];
@@ -42,7 +57,7 @@ const geocodeLocation = async (locationString) => {
 const getDirections = async (origin, destination, travelMode) => {
   try {
     console.log(`Getting ${travelMode} directions from ${origin.lat},${origin.lng} to ${destination.lat},${destination.lng}`);
-    
+
     const response = await axios.get(DIRECTIONS_API_URL, {
       params: {
         origin: `${origin.lat},${origin.lng}`,
@@ -54,11 +69,11 @@ const getDirections = async (origin, destination, travelMode) => {
     });
 
     console.log(`Directions API response status: ${response.data.status}`);
-    
+
     if (response.data.status === 'REQUEST_DENIED') {
       throw new Error(`Google Maps API request denied for ${travelMode}. Check your API key and enabled APIs.`);
     }
-    
+
     if (response.data.status !== 'OK' || !response.data.routes.length) {
       throw new Error(`No ${travelMode} route found (Status: ${response.data.status})`);
     }
@@ -81,39 +96,7 @@ const getDirections = async (origin, destination, travelMode) => {
   }
 };
 
-/**
- * Find nearby transit stations using Google Places API
- */
-const findNearbyTransitStations = async (location, radius = 1000) => {
-  try {
-    const response = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
-      params: {
-        location: `${location.lat},${location.lng}`,
-        radius: radius,
-        type: 'transit_station',
-        key: GOOGLE_MAPS_API_KEY
-      }
-    });
-
-    if (response.data.status !== 'OK') {
-      return [];
-    }
-
-    return response.data.results.map(station => ({
-      place_id: station.place_id,
-      name: station.name,
-      location: station.geometry.location,
-      types: station.types,
-      rating: station.rating || null
-    }));
-  } catch (error) {
-    console.error('Error finding nearby transit stations:', error.message);
-    return [];
-  }
-};
-
 module.exports = {
   geocodeLocation,
-  getDirections,
-  findNearbyTransitStations
+  getDirections
 };

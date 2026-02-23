@@ -110,7 +110,9 @@ const determineOptimalRoute = async ({
       analysis: {
         total_options_considered: routes.length,
         fastest_option: optimalRoute.type,
-        time_saved_vs_bike_only: bikingRoute.duration.value - (optimalRoute.duration?.value || bikingRoute.duration.value)
+        time_saved_vs_bike_only: optimalRoute.duration?.value != null
+          ? bikingRoute.duration.value - optimalRoute.duration.value
+          : 0
       }
     };
 

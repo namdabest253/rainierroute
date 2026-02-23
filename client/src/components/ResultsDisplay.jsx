@@ -72,7 +72,7 @@ const ResultsDisplay = ({ route }) => {
               <div className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
                 {index + 1}
               </div>
-              <p className="text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: step.html_instructions }}></p>
+              <p className="text-sm text-gray-700">{step.html_instructions?.replace(/<[^>]*>/g, '') ?? ''}</p>
             </div>
           ))}
           {route.steps.length > 3 && (

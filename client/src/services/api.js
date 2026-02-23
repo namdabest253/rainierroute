@@ -29,20 +29,20 @@ api.interceptors.response.use(
   },
   (error) => {
     console.error('API Response Error:', error.response?.data || error.message);
-    
+
     // Provide user-friendly error messages
     if (error.code === 'ECONNABORTED') {
       throw new Error('Request timeout. Please try again.');
     }
-    
+
     if (error.response?.status === 500) {
       throw new Error('Server error. Please try again later.');
     }
-    
+
     if (error.response?.status === 400) {
       throw new Error(error.response.data?.message || 'Invalid request. Please check your input.');
     }
-    
+
     throw new Error(error.response?.data?.message || 'Network error. Please check your connection.');
   }
 );
@@ -56,11 +56,16 @@ export const routeAPI = {
       start_location: startLocation,
       end_location: endLocation
     });
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to generate route');
     }
-    
+
+    const { route, metadata } = response.data;
+    if (!route || !route.optimal) {
+      throw new Error('Invalid route response from server');
+    }
+
     return response.data;
   }
 };

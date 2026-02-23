@@ -15,7 +15,13 @@ const generateRoute = async (req, res) => {
 
     console.log(`Generating route from "${start_location}" to "${end_location}"`);
 
+        // Check if API key is configured
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      throw new Error('Google Maps API key not configured');
+    }
+
     // Step 1: Geocode locations using Google Places API
+    console.log('Starting geocoding...');
     const [startCoords, endCoords] = await Promise.all([
       googleMapsService.geocodeLocation(start_location),
       googleMapsService.geocodeLocation(end_location)
@@ -26,14 +32,17 @@ const generateRoute = async (req, res) => {
     // Step 2: Get routing options from Google Directions API
     const [bikingRoute, transitRoute] = await Promise.all([
       googleMapsService.getDirections(startCoords, endCoords, 'BICYCLING'),
-      googleMapsService.getDirections(startCoords, endCoords, 'TRANSIT')
+      googleMapsService.getDirections(startCoords, endCoords, 'TRANSIT').catch(err => {
+        console.log('Transit route unavailable:', err.message);
+        return null;
+      })
     ]);
 
     console.log('Retrieved Google Directions');
 
     // Step 3: Get nearby transit stations and real-time data
     const nearbyTransitStations = await transitService.findNearbyStations(startCoords, endCoords);
-    
+
     console.log(`Found ${nearbyTransitStations.length} nearby transit stations`);
 
     // Step 4: Apply routing logic to determine optimal route

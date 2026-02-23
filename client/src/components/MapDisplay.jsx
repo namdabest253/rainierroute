@@ -4,18 +4,23 @@ import { Loader } from '@googlemaps/js-api-loader';
 const MapDisplay = ({ route, loading }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const overlaysRef = useRef([]);
   const [mapError, setMapError] = useState(null);
 
   // Initialize Google Maps
   useEffect(() => {
     const initMap = async () => {
       try {
-        // Note: In production, you'd load the API key from environment variables
-        // For now, we'll show a placeholder since the API key isn't configured
+        const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+        if (!apiKey) {
+          throw new Error('Google Maps API key not configured');
+        }
+
         const loader = new Loader({
-          apiKey: 'YOUR_GOOGLE_MAPS_API_KEY', // This would come from environment
+          apiKey,
           version: 'weekly',
-          libraries: ['places']
+          libraries: ['places', 'geometry']
         });
 
         await loader.load();
@@ -41,6 +46,18 @@ const MapDisplay = ({ route, loading }) => {
     };
 
     initMap();
+
+    // Cleanup function
+    return () => {
+      if (overlaysRef.current) {
+        overlaysRef.current.forEach(overlay => {
+          if (overlay && overlay.setMap) {
+            overlay.setMap(null);
+          }
+        });
+        overlaysRef.current = [];
+      }
+    };
   }, []);
 
   // Update map when route changes
@@ -50,35 +67,62 @@ const MapDisplay = ({ route, loading }) => {
     }
   }, [route]);
 
+  // Cleanup overlays when component unmounts or route changes
+  useEffect(() => {
+    return () => {
+      if (overlaysRef.current) {
+        overlaysRef.current.forEach(overlay => {
+          if (overlay && overlay.setMap) {
+            overlay.setMap(null);
+          }
+        });
+        overlaysRef.current = [];
+      }
+    };
+  }, [route]);
+
   const displayRoute = (routeData) => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map || !routeData) return;
 
-    // Clear existing overlays
-    // In a full implementation, we'd track and clear previous markers/polylines
+    // Clear existing overlays properly
+    try {
+      overlaysRef.current.forEach(overlay => {
+        if (overlay && overlay.setMap && typeof overlay.setMap === 'function') {
+          overlay.setMap(null);
+        }
+      });
+      overlaysRef.current = [];
+    } catch (error) {
+      console.warn('Error clearing overlays:', error);
+      overlaysRef.current = [];
+    }
 
     try {
-      if (routeData.optimal.type === 'bike_only') {
-        // Display single polyline for bike-only route
+      if (routeData.optimal.polyline && !routeData.optimal.segments) {
+        // Display single polyline for bike_only or transit_only routes
+        const strokeColor = routeData.optimal.type === 'transit_only' ? '#3b82f6' : '#22c55e';
         const polyline = new google.maps.Polyline({
           path: google.maps.geometry.encoding.decodePath(routeData.optimal.polyline),
           geodesic: true,
-          strokeColor: '#22c55e',
+          strokeColor,
           strokeOpacity: 1.0,
           strokeWeight: 4
         });
         polyline.setMap(map);
+        overlaysRef.current.push(polyline);
 
         // Fit map to route bounds
         const bounds = new google.maps.LatLngBounds();
         polyline.getPath().forEach(point => bounds.extend(point));
-        map.fitBounds(bounds);
+        map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
 
       } else if (routeData.optimal.segments) {
         // Display multi-segment route
         const colors = { BICYCLING: '#22c55e', TRANSIT: '#3b82f6' };
-        
-        routeData.optimal.segments.forEach((segment, index) => {
+
+        routeData.optimal.segments.forEach((segment) => {
+          if (!segment.polyline) return;
           const polyline = new google.maps.Polyline({
             path: google.maps.geometry.encoding.decodePath(segment.polyline),
             geodesic: true,
@@ -87,15 +131,17 @@ const MapDisplay = ({ route, loading }) => {
             strokeWeight: 4
           });
           polyline.setMap(map);
+          overlaysRef.current.push(polyline);
         });
 
         // Fit map to show all segments
         const bounds = new google.maps.LatLngBounds();
         routeData.optimal.segments.forEach(segment => {
+          if (!segment.polyline) return;
           const path = google.maps.geometry.encoding.decodePath(segment.polyline);
           path.forEach(point => bounds.extend(point));
         });
-        map.fitBounds(bounds);
+        map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
       }
     } catch (error) {
       console.error('Error displaying route on map:', error);
@@ -116,7 +162,7 @@ const MapDisplay = ({ route, loading }) => {
             {mapError}
           </p>
           <p className="text-xs text-gray-400 mt-2">
-            Configure GOOGLE_MAPS_API_KEY in your environment to enable maps
+            Configure VITE_GOOGLE_MAPS_API_KEY in client/.env to enable maps
           </p>
         </div>
       </div>
@@ -125,8 +171,8 @@ const MapDisplay = ({ route, loading }) => {
 
   return (
     <div className="card p-0 overflow-hidden">
-      <div 
-        ref={mapRef} 
+      <div
+        ref={mapRef}
         className="w-full h-96 relative"
         style={{ minHeight: '400px' }}
       >
@@ -138,7 +184,7 @@ const MapDisplay = ({ route, loading }) => {
             </div>
           </div>
         )}
-        
+
         {!route && !loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
             <div className="text-center">
@@ -156,7 +202,7 @@ const MapDisplay = ({ route, loading }) => {
           </div>
         )}
       </div>
-      
+
       {/* Map Legend */}
       {route && (
         <div className="p-4 bg-gray-50 border-t">

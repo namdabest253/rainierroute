@@ -15,15 +15,15 @@ const LoadingSpinner = () => {
               Geocoding locations...
             </p>
             <p className="flex items-center justify-center">
-              <span className="w-2 h-2 bg-secondary-500 rounded-full mr-2 animate-pulse animation-delay-200"></span>
+              <span className="w-2 h-2 bg-secondary-500 rounded-full mr-2 animate-pulse"></span>
               Calculating bike routes...
             </p>
             <p className="flex items-center justify-center">
-              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse animation-delay-400"></span>
+              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
               Checking transit options...
             </p>
             <p className="flex items-center justify-center">
-              <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse animation-delay-600"></span>
+              <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></span>
               Optimizing route...
             </p>
           </div>
