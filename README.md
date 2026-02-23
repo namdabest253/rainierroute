@@ -142,39 +142,6 @@ Generate an optimized multi-modal route.
 }
 ```
 
-## Deployment
-
-### Backend Deployment (Render/Heroku)
-
-1. **Render**:
-   - Connect your GitHub repository
-   - Set build command: `cd server && npm install`
-   - Set start command: `cd server && npm start`
-   - Add environment variable: `GOOGLE_MAPS_API_KEY`
-
-2. **Heroku**:
-```bash
-cd server
-heroku create your-app-name-api
-heroku config:set GOOGLE_MAPS_API_KEY=your_key
-git subtree push --prefix server heroku main
-```
-
-### Frontend Deployment (Vercel/Netlify)
-
-1. **Vercel**:
-   - Connect GitHub repository
-   - Set root directory: `client`
-   - Build command: `npm run build`
-   - Output directory: `dist`
-
-2. **Netlify**:
-   - Connect repository
-   - Build command: `cd client && npm run build`
-   - Publish directory: `client/dist`
-
-Update the frontend API base URL to point to your deployed backend.
-
 ## Development
 
 ### Project Structure
@@ -202,15 +169,6 @@ rainer-route/
 - `npm run client:dev` - Start only the frontend development server
 - `npm run client:build` - Build the frontend for production
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and test thoroughly
-4. Commit your changes: `git commit -am 'Add feature'`
-5. Push to the branch: `git push origin feature-name`
-6. Submit a pull request
-
 ## License
 
 MIT License - see LICENSE file for details.
@@ -224,7 +182,3 @@ MIT License - see LICENSE file for details.
 - [ ] Bike share integration
 - [ ] Real-time transit alerts
 - [ ] Mobile app (React Native)
-
----
-
-Built with ❤️ for Seattle commuters
